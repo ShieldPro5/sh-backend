@@ -3,8 +3,10 @@ import Complaint from '../models/complaint.js';
 // Get all complaints
 export const getAllComplaints = async (req, res) => {
   try {
+    console.log("Fetching all complaints");
     const complaints = await Complaint.find().sort({ createdAt: -1 });
     res.json(complaints);
+    console.log(complaints)
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
