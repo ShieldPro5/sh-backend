@@ -6,7 +6,7 @@ const complaintSchema = new mongoose.Schema({
   phone: { type: String },
   country: { type: String },
   currency: { type: String },
-  scam_type: { type: String, enum: ['crypto', 'transaction', 'gift_card', 'other'], required: true },
+  scam_type: { type: String, enum: ['crypto', 'other', 'binary', 'investment', 'romance', 'nft', 'forex'], required: true },
   description: { type: String, required: true },
   amount_lost: { type: Number },
   status: { type: String, enum: ['pending', 'in_review', 'resolved', 'closed'], default: 'pending' },
