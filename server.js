@@ -12,47 +12,48 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// =============================
-// 🔧 Middleware Setup
-// =============================
 
-// Disable caching
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+}));
+
 app.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
 });
 
-// Security headers
-app.use(helmet());
-
-// Parse JSON
 app.use(express.json({ limit: '2mb' }));
 
-// Logging
 app.use(morgan('dev'));
 
-// ✅ CORS — no wildcard path needed!
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://fundrecoverpro.vercel.app',
+  process.env.CLIENT_URL,  
+];
+
 app.use(cors({
-  origin: '*', // or e.g. 'http://localhost:3000' for your React app
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// =============================
-// 🚀 Routes
-// =============================
 app.get('/', (req, res) => {
-  res.json({ message: 'CORS is open to everyone 🚀' });
+  res.json({ message: 'CORS setup works 🚀' });
 });
 
 app.use('/api/complaints', complaintRoutes);
 
-// =============================
-// ⚠️ Error Handling Middleware
-// =============================
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error('❌ Error:', err.message);
   res.status(err.status || 500).json({
+    success: false,
     error: err.message || 'Internal Server Error',
   });
 });
@@ -66,6 +67,8 @@ mongoose.connect(process.env.MONGO_URI, {
 })
   .then(() => {
     console.log('✅ MongoDB connected');
-    app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+    app.listen(PORT, () =>
+      console.log(`🚀 Server running on port ${PORT}`)
+    );
   })
   .catch((err) => console.error('❌ MongoDB connection error:', err));
