@@ -30,6 +30,8 @@ app.use(morgan('dev'));
 const allowedOrigins = [
   'http://localhost:5173',
   'https://fundrecoverpro.vercel.app',
+  'https://www.coinmarketrecovery.net',
+  'https://coinmarketrecovery.net',
   process.env.CLIENT_URL,  
 ];
 
