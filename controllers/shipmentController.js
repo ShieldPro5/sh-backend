@@ -11,7 +11,7 @@ export const getAllShipments = async (req, res) => {
       .sort({ created_at: -1 })
       .skip(skip)
       .limit(limit);
-    
+
     // Ensure "Delivered" step exists in progress array for all shipments
     for (let shipment of shipments) {
       if (shipment.progress && Array.isArray(shipment.progress)) {
@@ -21,14 +21,14 @@ export const getAllShipments = async (req, res) => {
             title: "Delivered",
             description: "Package has been successfully delivered",
             location: shipment.destination,
-            timestamp: shipment.status === "Delivered" ? new Date() : null,
+          timestamp: shipment.status === "Delivered" ? shipment.delivered_at : shipment.status === "Out for Delivery" ? shipment.outDelivered_at : shipment.created_at,
             completed: shipment.status === "Delivered"
           });
           await shipment.save();
         }
       }
     }
-    
+
     const total = await Shipment.countDocuments();
 
     res.json({
@@ -49,7 +49,7 @@ export const getShipmentById = async (req, res) => {
     if (!shipment) {
       return res.status(404).json({ error: 'Shipment not found' });
     }
-    
+
     // Ensure "Delivered" step exists in progress array
     if (shipment.progress && Array.isArray(shipment.progress)) {
       const hasDelivered = shipment.progress.some(step => step.title === "Delivered");
@@ -58,13 +58,13 @@ export const getShipmentById = async (req, res) => {
           title: "Delivered",
           description: "Package has been successfully delivered",
           location: shipment.destination,
-          timestamp: shipment.status === "Delivered" ? new Date() : null,
+          timestamp: shipment.status === "Delivered" ? shipment.delivered_at : shipment.status === "Out for Delivery" ? shipment.outDelivered_at : shipment.created_at,
           completed: shipment.status === "Delivered"
         });
         await shipment.save();
       }
     }
-    
+
     res.json({ shipment });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -76,11 +76,11 @@ export const trackShipment = async (req, res) => {
   try {
     const { trackingId } = req.params;
     let shipment = await Shipment.findOne({ tracking_id: trackingId });
-    
+
     if (!shipment) {
       return res.status(404).json({ error: 'Shipment not found' });
     }
-    
+ 
     // Ensure "Delivered" step exists in progress array
     if (shipment.progress && Array.isArray(shipment.progress)) {
       const hasDelivered = shipment.progress.some(step => step.title === "Delivered");
@@ -89,13 +89,13 @@ export const trackShipment = async (req, res) => {
           title: "Delivered",
           description: "Package has been successfully delivered",
           location: shipment.destination,
-          timestamp: shipment.status === "Delivered" ? new Date() : null,
+          timestamp: shipment.status === "Delivered" ? shipment.delivered_at : shipment.status === "Out for Delivery" ? shipment.outDelivered_at : shipment.created_at,
           completed: shipment.status === "Delivered"
         });
         await shipment.save();
       }
     }
-    
+
     res.json({ shipment });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -119,16 +119,25 @@ export const createShipment = async (req, res) => {
 // Update shipment
 export const updateShipment = async (req, res) => {
   try {
+
+    if (req.body.status === "Delivered") {
+      req.body.delivered_at = new Date();
+    } else if (req.body.status === "Out for Delivery") {
+      req.body.outDelivered_at = new Date();
+    } else {
+      req.body.delivered_at = "";
+    }
+
     const shipment = await Shipment.findByIdAndUpdate(
       req.params.id,
       { ...req.body, updated_at: new Date() },
       { new: true, runValidators: true }
     );
-    
+
     if (!shipment) {
       return res.status(404).json({ error: 'Shipment not found' });
     }
-    
+
     res.json({ shipment });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -139,11 +148,11 @@ export const updateShipment = async (req, res) => {
 export const deleteShipment = async (req, res) => {
   try {
     const shipment = await Shipment.findByIdAndDelete(req.params.id);
-    
+
     if (!shipment) {
       return res.status(404).json({ error: 'Shipment not found' });
     }
-    
+
     res.json({ message: 'Shipment deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
@@ -160,14 +169,14 @@ export const getShipmentStats = async (req, res) => {
     const outForDelivery = await Shipment.countDocuments({ status: 'Out for Delivery' });
     const exception = await Shipment.countDocuments({ status: 'Exception' });
     const onHold = await Shipment.countDocuments({ status: 'On Hold' });
-    
+
     const totalValue = await Shipment.aggregate([
       { $group: { _id: null, total: { $sum: '$shipment_value' } } }
     ]);
-    
+
     const customsCleared = await Shipment.countDocuments({ customs_status: 'Cleared' });
     const customsOnHold = await Shipment.countDocuments({ customs_status: 'On Hold' });
-    
+
     res.json({
       total,
       status: {

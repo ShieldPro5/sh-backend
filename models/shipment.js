@@ -46,6 +46,8 @@ const shipmentSchema = new mongoose.Schema({
   special_instructions: String,
   delivery_attempts: { type: Number, default: 0 },
   last_update: Date,
+  delivered_at: { type: String },
+  outDelivered_at: { type: String },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now }
 }, { timestamps: true });
