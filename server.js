@@ -30,8 +30,8 @@ app.use(morgan('dev'));
 
 const allowedOrigins = [
   'http://localhost:5173',
-  'chttps://fedexshippingcenter.vercel.app',
-  'https://www.fedexshippingcenter.vercel.app',
+'https://fdex.onrender.com',
+'https://www.fdex.onrender.com',
   'https://www.fedexshippingcenter.com',
   'http://localhost:8080',
   'http://localhost:8081',
